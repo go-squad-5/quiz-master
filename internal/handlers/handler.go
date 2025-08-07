@@ -4,7 +4,7 @@ import (
 	"net/http"
 	"path/filepath"
 
-	"github.com/go-squad-5/go-init/internal/app"
+	"github.com/go-squad-5/quiz-master/internal/app"
 )
 
 type Handler struct {

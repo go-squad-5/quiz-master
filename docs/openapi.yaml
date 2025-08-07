@@ -1,81 +1,128 @@
-openapi: 3.1.1
+openapi: 3.0.3
 info:
-  title: Your API Documentation
+  title: Quiz Microservices API
+  description: Complete API documentation for all 5 microservices (Client, Session Manager, Quiz Manager, Report Generator, Email Service)
   version: 1.0.0
-  summary: Your API Docuemntation Summary
-  description: Your API Documentation Description
 servers:
-  - url: http://localhost:8080/api/v1
-    description: Development server
+  - url: http://localhost:8080
+  
 tags:
-  - name: ExampleTag
-    description: Example tag description
+  - name: Quiz Manager
+    description: Manages the quizes
+
 paths:
-  /health:
-    get:
-      summary: Health Check
-      description: Check the health of the API
+  /quiz/generate:
+    post:
       tags:
-        - ExampleTag
+        - Quiz Manager
+      summary: Generate quiz for user
+      requestBody:
+        $ref: '#/components/requestBodies/GenerateQuiz'
       responses:
         '200':
-          description: Successful health check
+          description: Quiz questions returned
           content:
             application/json:
               schema:
-                type: object
-                properties:
-                  status:
-                    type: string
-                    example: "OK"
+                $ref: '#/components/schemas/Questions'
         '400':
-          $ref: '#/components/responses/BadRequestError'
+          description: Invalid request
+        '401':
+          description: Unauthenticated
+        '403':
+          description: forbidden
+        '404':
+          description: topic not found
         '500':
-          $ref: '#/components/responses/InternalServerError'
+          description: internal server error
+              
+  /quiz/store-answer:
+    post:
+      tags:
+        - Quiz Manager
+      summary: Store submitted answers
+      requestBody:
+        $ref: '#/components/requestBodies/StoreAnswer'
+      responses:
+        '204':
+          description: Answers stored in DB
+        '400':
+          description: Invalid request
+        '401':
+          description: Unauthenticated
+        '403':
+          description: forbidden
+        '404':
+          description: session or user id not found
+        '500':
+          description: internal server error
 components:
-
   schemas:
-    ErrorResponse:
+    Questions:
       type: object
+      required:
+      - question_id
+      - options
       properties:
-        error:
+        question_id:
           type: string
-          example: An error occurred
+          example: ques1
+        question:
+          type: string
+          example: What is Go?
+        options:
+          type: array
+          items:
+            type: string
+          example:
+            - Language
+            - Animal
+            - Game
+            
+  requestBodies:
+    GenerateQuiz:
+      description: Data to generate a quiz
+      required: true
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              topic:
+                type: string
+              user_id:
+                type: string
+              session_id:
+                type: string
+            example:
+              topic: go
+              user_id: user1
+              session_id: ssid1
 
-  responses:
-    UnauthorizedError:
-      description: Unauthorized access
+    StoreAnswer:
+      description: Data of answer to questions
+      required: true
       content:
         application/json:
           schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Not authenticated or insufficient permissions
-    BadRequestError:
-      description: Bad Request
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Invalid input
-    NotFoundError:
-      description: Resource not found
-      content:
-        application/json:
-          schema:
-            type: object
-            properties:
-              error:
-                type: string
-                example: Resource not found
-    InternalServerError:
-      description: Internal Server Error
-      content:
-        application/json:
-          schema:
-            $ref: '#/components/schemas/ErrorResponse'
+            type: array
+            items:
+              type: object
+              properties:
+                session_id:
+                  type: string
+                  example: ssid1
+                answers:
+                  type: array
+                  items:
+                    type: object
+                    properties:
+                      ques_id:
+                        type: string
+                        example: ques1
+                      answer:
+                        type: string
+                        example: a
+                  
+              
+
