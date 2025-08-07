@@ -1,0 +1,81 @@
+openapi: 3.1.1
+info:
+  title: Your API Documentation
+  version: 1.0.0
+  summary: Your API Docuemntation Summary
+  description: Your API Documentation Description
+servers:
+  - url: http://localhost:8080/api/v1
+    description: Development server
+tags:
+  - name: ExampleTag
+    description: Example tag description
+paths:
+  /health:
+    get:
+      summary: Health Check
+      description: Check the health of the API
+      tags:
+        - ExampleTag
+      responses:
+        '200':
+          description: Successful health check
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "OK"
+        '400':
+          $ref: '#/components/responses/BadRequestError'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+components:
+
+  schemas:
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+          example: An error occurred
+
+  responses:
+    UnauthorizedError:
+      description: Unauthorized access
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Not authenticated or insufficient permissions
+    BadRequestError:
+      description: Bad Request
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Invalid input
+    NotFoundError:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: Resource not found
+    InternalServerError:
+      description: Internal Server Error
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/ErrorResponse'
