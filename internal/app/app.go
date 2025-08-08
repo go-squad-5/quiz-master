@@ -1,15 +1,20 @@
 package app
 
-import "github.com/go-squad-5/quiz-master/internal/config"
+import (
+	"database/sql"
+
+	"github.com/go-squad-5/quiz-master/internal/config"
+)
 
 type App struct {
-	config *config.Config
+	Config *config.Config
+	Db     *sql.DB
 	// and more fields... db, logger, etc.
 }
 
 func NewApp(config *config.Config) *App {
 	return &App{
-		config: config,
+		Config: config,
 		// Initialize other fields like db, logger, etc.
 	}
 }
