@@ -20,6 +20,10 @@ func NewHandler(repo repositories.Repository) Handler {
 	}
 }
 
+type ResponseGetQuiz struct {
+	Questions []models.Question `json:"questions"`
+}
+
 func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -37,6 +41,8 @@ func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 	}
 
 	ssid := req.Ssid
+	log.Println("Session ID:", ssid)
+	log.Println("Topic:", req.Topic)
 
 	quiz, err := h.repo.GetAllQuestionByTopic(req.Topic)
 	if err != nil {
@@ -46,6 +52,7 @@ func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if len(quiz) == 0 {
+		log.Println("No questions found for the given topic")
 		http.Error(w, "No questions found", http.StatusNotFound)
 	}
 
@@ -55,7 +62,11 @@ func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	if err := json.NewEncoder(w).Encode(quiz); err != nil {
+	quizResponse := ResponseGetQuiz{
+		Questions: quiz,
+	}
+
+	if err := json.NewEncoder(w).Encode(quizResponse); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
 }
@@ -71,7 +82,7 @@ func (h *Handler) ScoreQuiz(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		log.Println("error: %v", err)
+		log.Printf("error: %v\n", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
