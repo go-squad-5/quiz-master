@@ -1,6 +1,11 @@
 package config
 
-import "fmt"
+import (
+	"fmt"
+	"os"
+
+	_ "github.com/joho/godotenv/autoload"
+)
 
 type DBConfig struct {
 	User     string
@@ -12,8 +17,8 @@ type DBConfig struct {
 
 func GetDBConfig() DBConfig {
 	return DBConfig{
-		User:     "quizuser",
-		Password: "quizpass",
+		User:     "root",
+		Password: "your_secure_password",
 		Host:     "localhost",
 		Port:     "3306",
 		DBName:   "quizdb",
@@ -32,10 +37,16 @@ func Load() *Config {
 
 	dbconfig := GetDBConfig()
 
+	dsn := os.Getenv("DB_DSN")
+
+	if dsn != "" {
+		dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
+			dbconfig.User, dbconfig.Password, dbconfig.Host, dbconfig.Port, dbconfig.DBName,
+		)
+	}
+
 	return &Config{
 		Port: ":8090",
-		DSN: fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
-			dbconfig.User, dbconfig.Password, dbconfig.Host, dbconfig.Port, dbconfig.DBName,
-		),
+		DSN:  dsn,
 	}
 }
