@@ -8,13 +8,7 @@ import (
 
 	"github.com/go-squad-5/quiz-master/internal/models"
 	"github.com/go-squad-5/quiz-master/internal/repositories"
-	// "path/filepath"
-	// "github.com/go-squad-5/quiz-master/internal/app"
 )
-
-type message struct {
-	Message string `json:"msg"`
-}
 
 type Handler struct {
 	repo repositories.Repository
@@ -27,24 +21,26 @@ func NewHandler(repo repositories.Repository) Handler {
 }
 
 func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
-	if r.Method != http.MethodGet {
+	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return
 	}
-	topic := r.URL.Query().Get("topic")
+	// topic := r.URL.Query().Get("topic")
 
 	var req models.CreateQuizBody
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
+		log.Println("Invalid request body")
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	ssid := req.Ssid
 
-	quiz, err := h.repo.GetAllQuestionByTopic(topic)
+	quiz, err := h.repo.GetAllQuestionByTopic(req.Topic)
 	if err != nil {
+		http.Error(w, "Error getting topic", http.StatusInternalServerError)
 		fmt.Printf("Error getting questions: %v", err)
 		// log.Println("Error getting the questions")
 	}
@@ -75,26 +71,35 @@ func (h *Handler) ScoreQuiz(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
+		log.Println("error: %v", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
-	ids := make([]string, len(req.Questions))
+	ids := make([]string, 0, len(req.Answers))
 
-	for _, question := range req.Questions {
-		ids = append(ids, question.Id)
+	for _, answer := range req.Answers {
+		ids = append(ids, answer.Id)
 	}
+
+	fmt.Println(ids)
 
 	questions, err := h.repo.GetQuestionsByIds(ids)
 	if err != nil {
 		log.Println(err)
+		http.Error(w, "Error verifying questions", http.StatusInternalServerError)
 		return
 	}
 
 	for _, question := range questions {
-		for _, reqQuestion := range req.Questions {
+		for _, reqQuestion := range req.Answers {
 			if reqQuestion.Id == question.Id {
-				err := h.repo.StoreAnswers(req.Ssid, question.Id, reqQuestion.Answer)
+				err := h.repo.StoreAnswers(
+					req.Ssid,
+					question.Id,
+					reqQuestion.Answer,
+					reqQuestion.Answer == question.Answer,
+				)
 				if err != nil {
 					log.Println("Failed to save answer: ", err)
 					http.Error(w, "Failed to save answer", http.StatusInternalServerError)
@@ -108,11 +113,9 @@ func (h *Handler) ScoreQuiz(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	// var scoreRes models.ScoreResponse
-	//
-	//  json.Marshal(&scoreRes)
-	scoreRes := fmt.Sprintf(`{"score": %d}`, score)
 	w.Header().Set("Content-Type", "application/json")
-
-	w.Write([]byte(scoreRes))
+	json.NewEncoder(w).Encode(models.ScoreResponse{
+		Ssid:  req.Ssid,
+		Score: score,
+	})
 }

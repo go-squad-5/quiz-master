@@ -23,7 +23,7 @@ func main() {
 	router := router.NewRouter(app)
 	route := router.Route()
 
-	log.Println("Starting server on :8080")
+	log.Println("Starting server on", app.Config.Port)
 	log.Fatal(http.ListenAndServe(app.Config.Port, route))
 }
 

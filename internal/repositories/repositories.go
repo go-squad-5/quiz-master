@@ -6,5 +6,5 @@ type Repository interface {
 	GetAllQuestionByTopic(topic string) ([]models.Question, error)
 	GetQuestionsByIds(id []string) ([]models.Question, error)
 	CreateQuiz(string, []models.Question) error
-	StoreAnswers(string, string, string) error
+	StoreAnswers(string, string, string, bool) error
 }

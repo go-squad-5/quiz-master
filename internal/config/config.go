@@ -33,7 +33,7 @@ func Load() *Config {
 	dbconfig := GetDBConfig()
 
 	return &Config{
-		Port: ":8080",
+		Port: ":8090",
 		DSN: fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
 			dbconfig.User, dbconfig.Password, dbconfig.Host, dbconfig.Port, dbconfig.DBName,
 		),

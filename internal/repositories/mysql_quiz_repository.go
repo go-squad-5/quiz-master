@@ -68,7 +68,7 @@ func (r *quizRepository) GetQuestionsByIds(ids []string) ([]models.Question, err
 	placeholders := strings.Repeat("?,", len(ids))
 	placeholders = placeholders[:len(placeholders)-1]
 
-	query := fmt.Sprintf("SELECT id, content, answer FROM questions WHERE id IN (%s)", placeholders)
+	query := fmt.Sprintf("SELECT id, answer FROM questions WHERE id IN (%s)", placeholders)
 
 	args := make([]any, len(ids))
 	for i, id := range ids {
@@ -84,7 +84,7 @@ func (r *quizRepository) GetQuestionsByIds(ids []string) ([]models.Question, err
 	var questions []models.Question
 	for rows.Next() {
 		var q models.Question
-		if err := rows.Scan(&q.Id, &q.Question, &q.Answer); err != nil {
+		if err := rows.Scan(&q.Id, &q.Answer); err != nil {
 			return nil, fmt.Errorf("failed to scan question: %w", err)
 		}
 		questions = append(questions, q)
@@ -113,10 +113,10 @@ func (r *quizRepository) CreateQuiz(ssid string, questions []models.Question) er
 	return nil
 }
 
-func (r *quizRepository) StoreAnswers(ssid, questionId, answer string) error {
-	query := `INSERT INTO session_answers (session_id, question_id, answer) VALUES (?, ?, ?)`
+func (r *quizRepository) StoreAnswers(ssid, questionId, answer string, is_correct bool) error {
+	query := `UPDATE quizzes SET answer = ?, is_correct = ? WHERE session_id = ? and question_id = ?`
 
-	_, err := r.db.Exec(query, ssid, questionId, answer)
+	_, err := r.db.Exec(query, answer, is_correct, ssid, questionId)
 	if err != nil {
 		return fmt.Errorf("failed to store answer: %w", err)
 	}

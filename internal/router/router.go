@@ -22,7 +22,7 @@ func (r *Router) Route() *http.ServeMux {
 
 	handlers := handlers.NewHandler(*r.app.Repository)
 
-	mux.HandleFunc("/quiz/", handlers.GetQuiz)
+	mux.HandleFunc("/quiz/fetch", handlers.GetQuiz)
 	mux.HandleFunc("/quiz/score", handlers.ScoreQuiz)
 
 	return mux

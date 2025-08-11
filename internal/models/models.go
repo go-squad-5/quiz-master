@@ -1,7 +1,5 @@
 package models
 
-// package config
-
 type Question struct {
 	Id       string   `json:"id"`
 	Question string   `json:"question"`
@@ -17,17 +15,19 @@ type Quizzes struct {
 }
 
 type CreateQuizBody struct {
-	Ssid string `json:"ssid"`
+	Ssid  string `json:"ssid"`
+	Topic string `json:"topic"`
 }
 
 type ScoreQuizBody struct {
-	Ssid      string `json:"ssid"`
-	Questions []struct {
-		Id     string `json:"id"`
+	Ssid    string `json:"ssid"`
+	Answers []struct {
+		Id     string `json:"ques_id"`
 		Answer string `json:"answer"`
-	}
+	} `json:"answers"`
 }
 
 type ScoreResponse struct {
-	Score int `json:"score"`
+	Ssid  string `json:"ssid"`
+	Score int    `json:"score"`
 }
