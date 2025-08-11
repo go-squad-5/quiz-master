@@ -2,20 +2,32 @@ package models
 
 // package config
 
-type DBConfig struct {
-	User     string
-	Password string
-	Host     string
-	Port     string
-	DBName   string
+type Question struct {
+	Id       string   `json:"id"`
+	Question string   `json:"question"`
+	Options  []string `json:"options"`
+	Answer   string   `json:"answer"`
 }
 
-func GetDBConfig() DBConfig {
-	return DBConfig{
-		User:     "quizuser",
-		Password: "quizpass",
-		Host:     "localhost",
-		Port:     "3306",
-		DBName:   "quizdb",
+type Quizzes struct {
+	Id         int    `json:"id"`
+	SessionID  string `json:"session_id"`
+	QuestionID string `json:"question_id"`
+	Answer     string `json:"answer"`
+}
+
+type CreateQuizBody struct {
+	Ssid string `json:"ssid"`
+}
+
+type ScoreQuizBody struct {
+	Ssid      string `json:"ssid"`
+	Questions []struct {
+		Id     string `json:"id"`
+		Answer string `json:"answer"`
 	}
+}
+
+type ScoreResponse struct {
+	Score int `json:"score"`
 }

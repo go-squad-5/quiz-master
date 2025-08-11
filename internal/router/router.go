@@ -17,11 +17,13 @@ func NewRouter(app *app.App) *Router {
 	}
 }
 
-func Route() *http.ServeMux {
+func (r *Router) Route() *http.ServeMux {
 	mux := http.NewServeMux()
 
-	mux.HandleFunc("/quiz/get", handlers.GetQuiz)
-	mux.HandleFunc("/quiz/store", handlers.StoreQuiz)
+	handlers := handlers.NewHandler(*r.app.Repository)
+
+	mux.HandleFunc("/quiz/", handlers.GetQuiz)
+	mux.HandleFunc("/quiz/score", handlers.ScoreQuiz)
 
 	return mux
 }

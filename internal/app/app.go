@@ -1,15 +1,13 @@
 package app
 
 import (
-	"database/sql"
-
 	"github.com/go-squad-5/quiz-master/internal/config"
+	"github.com/go-squad-5/quiz-master/internal/repositories"
 )
 
 type App struct {
-	Config *config.Config
-	Db     *sql.DB
-	// and more fields... db, logger, etc.
+	Config     *config.Config
+	Repository *repositories.Repository // and more fields... db, logger, etc.
 }
 
 func NewApp(config *config.Config) *App {

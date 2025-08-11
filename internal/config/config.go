@@ -1,10 +1,24 @@
 package config
 
-import (
-	"fmt"
+import "fmt"
 
-	"github.com/go-squad-5/quiz-master/internal/models"
-)
+type DBConfig struct {
+	User     string
+	Password string
+	Host     string
+	Port     string
+	DBName   string
+}
+
+func GetDBConfig() DBConfig {
+	return DBConfig{
+		User:     "quizuser",
+		Password: "quizpass",
+		Host:     "localhost",
+		Port:     "3306",
+		DBName:   "quizdb",
+	}
+}
 
 type Config struct {
 	Port string
@@ -16,7 +30,7 @@ func Load() *Config {
 	// TODO: Load configuration from environment variables, files, etc.
 	// For simplicity, returning a hardcoded config.
 
-	dbconfig := models.GetDBConfig()
+	dbconfig := GetDBConfig()
 
 	return &Config{
 		Port: ":8080",
