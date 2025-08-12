@@ -93,8 +93,6 @@ func (h *Handler) ScoreQuiz(w http.ResponseWriter, r *http.Request) {
 		ids = append(ids, answer.Id)
 	}
 
-	fmt.Println(ids)
-
 	questions, err := h.repo.GetQuestionsByIds(ids)
 	if err != nil {
 		log.Println(err)
