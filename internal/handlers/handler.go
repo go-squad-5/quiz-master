@@ -56,8 +56,12 @@ func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 		// log.Println("No questions found for the given topic")
 		http.Error(w, "Not enough questions found", http.StatusNotFound)
 	}
-	randomNumber := rand.Intn(len(quiz) - noOfQuestions)
-	quiz = quiz[randomNumber : noOfQuestions+randomNumber]
+	t := len(quiz) - noOfQuestions
+	randomNumber := 0
+	if t > 0 {
+		randomNumber = rand.Intn(t)
+	}
+	quiz = quiz[randomNumber : randomNumber+noOfQuestions]
 
 	if err := h.repo.CreateQuiz(ssid, quiz); err != nil {
 		http.Error(w, "Unable to create quiz", http.StatusInternalServerError)
