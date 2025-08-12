@@ -17,8 +17,8 @@ type DBConfig struct {
 
 func GetDBConfig() DBConfig {
 	return DBConfig{
-		User:     "root",
-		Password: "your_secure_password",
+		User:     "quizuser",
+		Password: "quizpass",
 		Host:     "localhost",
 		Port:     "3306",
 		DBName:   "quizdb",
@@ -40,14 +40,15 @@ func Load() *Config {
 
 	dsn := os.Getenv("DB_DSN")
 
-	if dsn != "" {
+	if dsn == "" {
 		dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
 			dbconfig.User, dbconfig.Password, dbconfig.Host, dbconfig.Port, dbconfig.DBName,
 		)
 	}
 
 	return &Config{
-		Port: ":8090",
-		DSN:  dsn,
+		Port:        ":8090",
+		DSN:         dsn,
+		WorkerCount: 2,
 	}
 }

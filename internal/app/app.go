@@ -6,30 +6,35 @@ import (
 	"fmt"
 	"io"
 	"log"
+	"math/rand"
 	"net"
 	"net/http"
+	"time"
 
 	"github.com/go-squad-5/quiz-master/internal/config"
+	"github.com/go-squad-5/quiz-master/internal/handlers"
 	"github.com/go-squad-5/quiz-master/internal/repositories"
+	"github.com/go-squad-5/quiz-master/internal/router"
 )
 
 type App struct {
 	Config      *config.Config
-	Repository  *repositories.Repository // and more fields... db, logger, etc.
+	Repository  repositories.Repository // and more fields... db, logger, etc.
 	ConnChannel chan net.Conn
+	router      *router.Router
 }
 
-func (app *App) serve() {
-	ln, err := net.Listen("tcp", ":8080")
+func (app *App) Serve() error {
+	ln, err := net.Listen("tcp", app.Config.Port)
 	if err != nil {
-		panic(err)
+		return err
 	}
-	fmt.Println("Listening on :8080")
+	log.Println("Listening on port: ", app.Config.Port)
 
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
-			fmt.Println("Failed to accept:", err)
+			log.Println("Failed to accept:", err)
 			continue
 		}
 
@@ -37,7 +42,8 @@ func (app *App) serve() {
 	}
 }
 
-func handleConn(connChannel <-chan net.Conn) {
+func handleConn(connChannel <-chan net.Conn, id int, router *router.Router) {
+	log.Println("handleConn ", id, " started")
 	for conn := range connChannel {
 
 		reader := bufio.NewReader(conn)
@@ -50,6 +56,10 @@ func handleConn(connChannel <-chan net.Conn) {
 		}
 		rw := newRW(conn)
 		// TODO: need to serve request using router
+		log.Println("routine: ", id, "processing request")
+		time.Sleep(time.Duration(rand.Intn(6)+1) * time.Second)
+		router.ServeHTTP(rw, req)
+		log.Println("routine: ", id, "sending response")
 		rw.Flush()
 		conn.Close()
 	}
@@ -103,30 +113,34 @@ func (rw *rw) Flush() error {
 
 func NewApp() *App {
 	config := config.Load()
-	repository := InitDB(config.DSN) // InitDB(app)
-	connChannel := intializeWorkers(config.WorkerCount)
-	log.Println("Connected to MySQL!")
+	repository := InitDB(config.DSN)
+	handler := handlers.NewHandler(repository)
+	router := router.NewRouter(handler)
+	connChannel := intializeWorkers(config.WorkerCount, router)
+
 	return &App{
 		Config:      config,
 		Repository:  repository,
 		ConnChannel: connChannel,
-		// Initialize other fields like db, logger, etc.
+		// router:      router,
 	}
 }
 
-func InitDB(dsn string) *repositories.Repository {
+func InitDB(dsn string) repositories.Repository {
 	respository, err := repositories.NewMySQLRepository(dsn)
 	if err != nil {
 		log.Fatalf("Failed to connect to DB: %v", err)
 	}
+	log.Println("Connected to MySQL!")
 
-	return &respository
+	return respository
 }
 
-func intializeWorkers(workerCount int) chan net.Conn {
+func intializeWorkers(workerCount int, router *router.Router) chan net.Conn {
 	connChannel := make(chan net.Conn)
-	for range workerCount {
-		go handleConn(connChannel)
+	for i := range workerCount {
+		go handleConn(connChannel, i, router)
+		time.Sleep(500 * time.Millisecond)
 	}
 	return connChannel
 }

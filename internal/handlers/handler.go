@@ -2,7 +2,6 @@ package handlers
 
 import (
 	"encoding/json"
-	"log"
 	"net/http"
 	"time"
 
@@ -27,7 +26,7 @@ type ResponseGetQuiz struct {
 func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
-		log.Println("Request recieved at invalid method want: ", http.MethodPost, "got: ", r.Method)
+		// log.Println("Request recieved at invalid method want: ", http.MethodPost, "got: ", r.Method)
 		return
 	}
 
@@ -35,23 +34,21 @@ func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		log.Println("Invalid request body")
+		// log.Println("Invalid request body")
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
 
 	ssid := req.Ssid
-	log.Println("Session ID:", ssid)
-	log.Println("Topic:", req.Topic)
 
 	quiz, err := h.repo.GetAllQuestionByTopic(req.Topic)
 	if err != nil {
 		http.Error(w, "Error getting topic", http.StatusInternalServerError)
-		log.Printf("Error getting questions: %v", err)
+		// log.Printf("Error getting questions: %v", err)
 	}
 
 	if len(quiz) == 0 {
-		log.Println("No questions found for the given topic")
+		// log.Println("No questions found for the given topic")
 		http.Error(w, "No questions found", http.StatusNotFound)
 	}
 
@@ -68,7 +65,6 @@ func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 	if err := json.NewEncoder(w).Encode(quizResponse); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
-	log.Println("sent response for fetch quiz")
 }
 
 func (h *Handler) ScoreQuiz(w http.ResponseWriter, r *http.Request) {
@@ -82,7 +78,7 @@ func (h *Handler) ScoreQuiz(w http.ResponseWriter, r *http.Request) {
 
 	err := json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
-		log.Printf("error: %v\n", err)
+		// log.Printf("error: %v\n", err)
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
 		return
 	}
@@ -95,7 +91,7 @@ func (h *Handler) ScoreQuiz(w http.ResponseWriter, r *http.Request) {
 
 	questions, err := h.repo.GetQuestionsByIds(ids)
 	if err != nil {
-		log.Println(err)
+		// log.Println(err)
 		http.Error(w, "Error verifying questions", http.StatusInternalServerError)
 		return
 	}
@@ -115,7 +111,7 @@ func (h *Handler) ScoreQuiz(w http.ResponseWriter, r *http.Request) {
 				}(req.Ssid, question.Id, reqQuestion.Answer, reqQuestion.Answer == question.Answer, channel)
 				err := <-channel
 				if err != nil {
-					log.Println("Failed to save answer: ", err)
+					// log.Println("Failed to save answer: ", err)
 					http.Error(w, "Failed to save answer", http.StatusInternalServerError)
 					return
 				}
@@ -135,5 +131,4 @@ func (h *Handler) ScoreQuiz(w http.ResponseWriter, r *http.Request) {
 	})
 	go w.Write([]byte("sent later"))
 	time.Sleep(3 * time.Second)
-	log.Println("Sent response for score quiz")
 }

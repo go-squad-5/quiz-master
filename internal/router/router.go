@@ -2,10 +2,8 @@
 package router
 
 import (
-	"log"
 	"net/http"
 
-	"github.com/go-squad-5/quiz-master/internal/app"
 	"github.com/go-squad-5/quiz-master/internal/handlers"
 )
 
@@ -15,22 +13,19 @@ type Router struct {
 	handlers handlers.Handler
 }
 
-// Create router and initialize handlers and concurrency control
-func NewRouter(app *app.App) *Router {
+func NewRouter(handler handlers.Handler) *Router {
 	return &Router{
-		handlers: handlers.NewHandler(*app.Repository),
+		handlers: handler,
 	}
 }
 
-// Implement ServeHTTP manually
 func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 	path := req.URL.Path
 	// TODO: need to make sure serveHTTP exit only when request is processed
-	switch {
-	case path == "/quiz/fetch":
+	switch path {
+	case "/quiz/fetch":
 		r.handlers.GetQuiz(w, req)
-	case path == "/quiz/score":
-		log.Println("request recieved to get score and post answers")
+	case "/quiz/score":
 		r.handlers.ScoreQuiz(w, req)
 	default:
 		http.NotFound(w, req)
