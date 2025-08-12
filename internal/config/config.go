@@ -21,8 +21,9 @@ func GetDBConfig() DBConfig {
 }
 
 type Config struct {
-	Port string
-	DSN  string
+	Port        string
+	DSN         string
+	WorkerCount int
 	// and more fields...
 }
 

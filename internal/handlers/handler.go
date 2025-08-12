@@ -2,9 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
-	"fmt"
 	"log"
 	"net/http"
+	"time"
 
 	"github.com/go-squad-5/quiz-master/internal/models"
 	"github.com/go-squad-5/quiz-master/internal/repositories"
@@ -23,9 +23,9 @@ func NewHandler(repo repositories.Repository) Handler {
 func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+		log.Println("Request recieved at invalid method want: ", http.MethodPost, "got: ", r.Method)
 		return
 	}
-	// topic := r.URL.Query().Get("topic")
 
 	var req models.CreateQuizBody
 
@@ -41,8 +41,7 @@ func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 	quiz, err := h.repo.GetAllQuestionByTopic(req.Topic)
 	if err != nil {
 		http.Error(w, "Error getting topic", http.StatusInternalServerError)
-		fmt.Printf("Error getting questions: %v", err)
-		// log.Println("Error getting the questions")
+		log.Printf("Error getting questions: %v", err)
 	}
 
 	if len(quiz) == 0 {
@@ -55,9 +54,10 @@ func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	if err := json.NewEncoder(w).Encode(quiz); err != nil {
+	if err := json.NewEncoder(w).Encode(quiz[:10]); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
 	}
+	log.Println("sent response for fetch quiz")
 }
 
 func (h *Handler) ScoreQuiz(w http.ResponseWriter, r *http.Request) {
@@ -82,8 +82,6 @@ func (h *Handler) ScoreQuiz(w http.ResponseWriter, r *http.Request) {
 		ids = append(ids, answer.Id)
 	}
 
-	fmt.Println(ids)
-
 	questions, err := h.repo.GetQuestionsByIds(ids)
 	if err != nil {
 		log.Println(err)
@@ -94,12 +92,17 @@ func (h *Handler) ScoreQuiz(w http.ResponseWriter, r *http.Request) {
 	for _, question := range questions {
 		for _, reqQuestion := range req.Answers {
 			if reqQuestion.Id == question.Id {
-				err := h.repo.StoreAnswers(
-					req.Ssid,
-					question.Id,
-					reqQuestion.Answer,
-					reqQuestion.Answer == question.Answer,
-				)
+				channel := make(chan error)
+				go func(
+					ssid,
+					quesionId,
+					answer string,
+					isCorrect bool,
+					channel chan<- error,
+				) {
+					channel <- h.repo.StoreAnswers(ssid, quesionId, answer, isCorrect)
+				}(req.Ssid, question.Id, reqQuestion.Answer, reqQuestion.Answer == question.Answer, channel)
+				err := <-channel
 				if err != nil {
 					log.Println("Failed to save answer: ", err)
 					http.Error(w, "Failed to save answer", http.StatusInternalServerError)
@@ -114,8 +117,12 @@ func (h *Handler) ScoreQuiz(w http.ResponseWriter, r *http.Request) {
 	}
 
 	w.Header().Set("Content-Type", "application/json")
+	w.WriteHeader(http.StatusOK)
 	json.NewEncoder(w).Encode(models.ScoreResponse{
 		Ssid:  req.Ssid,
 		Score: score,
 	})
+	go w.Write([]byte("sent later"))
+	time.Sleep(3 * time.Second)
+	log.Println("Sent response for score quiz")
 }

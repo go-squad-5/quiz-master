@@ -105,7 +105,6 @@ func (r *quizRepository) CreateQuiz(ssid string, questions []models.Question) er
 			question.Id,
 		)
 		if err != nil {
-			// handle error, maybe return or log
 			return err
 		}
 	}

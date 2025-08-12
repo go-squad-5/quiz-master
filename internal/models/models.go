@@ -1,7 +1,7 @@
 package models
 
 type Question struct {
-	Id       string   `json:"id"`
+	Id       string   `json:"quiz_id"`
 	Question string   `json:"question"`
 	Options  []string `json:"options"`
 	Answer   string   `json:"answer"`
@@ -9,7 +9,7 @@ type Question struct {
 
 type Quizzes struct {
 	Id         int    `json:"id"`
-	SessionID  string `json:"session_id"`
+	SessionID  string `json:"ssid"`
 	QuestionID string `json:"question_id"`
 	Answer     string `json:"answer"`
 }
