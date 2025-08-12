@@ -49,6 +49,6 @@ func Load() *Config {
 	return &Config{
 		Port:        ":8090",
 		DSN:         dsn,
-		WorkerCount: 2,
+		WorkerCount: 10,
 	}
 }

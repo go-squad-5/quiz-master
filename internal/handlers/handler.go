@@ -2,8 +2,9 @@ package handlers
 
 import (
 	"encoding/json"
+	"math/rand"
 	"net/http"
-	"time"
+	"strconv"
 
 	"github.com/go-squad-5/quiz-master/internal/models"
 	"github.com/go-squad-5/quiz-master/internal/repositories"
@@ -32,7 +33,11 @@ func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 
 	var req models.CreateQuizBody
 
-	err := json.NewDecoder(r.Body).Decode(&req)
+	noOfQuestions, err := strconv.Atoi(r.URL.Query().Get("noOfQuestions"))
+	if err != nil {
+		noOfQuestions = 20
+	}
+	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		// log.Println("Invalid request body")
 		http.Error(w, "Invalid request body", http.StatusBadRequest)
@@ -47,10 +52,12 @@ func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 		// log.Printf("Error getting questions: %v", err)
 	}
 
-	if len(quiz) == 0 {
+	if len(quiz) < noOfQuestions {
 		// log.Println("No questions found for the given topic")
-		http.Error(w, "No questions found", http.StatusNotFound)
+		http.Error(w, "Not enough questions found", http.StatusNotFound)
 	}
+	randomNumber := rand.Intn(len(quiz) - noOfQuestions)
+	quiz = quiz[randomNumber : noOfQuestions+randomNumber]
 
 	if err := h.repo.CreateQuiz(ssid, quiz); err != nil {
 		http.Error(w, "Unable to create quiz", http.StatusInternalServerError)
@@ -129,6 +136,4 @@ func (h *Handler) ScoreQuiz(w http.ResponseWriter, r *http.Request) {
 		Ssid:  req.Ssid,
 		Score: score,
 	})
-	go w.Write([]byte("sent later"))
-	time.Sleep(3 * time.Second)
 }
