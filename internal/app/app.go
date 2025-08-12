@@ -109,7 +109,7 @@ func NewApp() *App {
 	return &App{
 		Config:      config,
 		Repository:  repository,
-		connChannel: connChannel,
+		ConnChannel: connChannel,
 		// Initialize other fields like db, logger, etc.
 	}
 }
