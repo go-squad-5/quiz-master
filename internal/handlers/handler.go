@@ -20,10 +20,6 @@ func NewHandler(repo repositories.Repository) Handler {
 	}
 }
 
-type ResponseGetQuiz struct {
-	Questions []models.Question `json:"questions"`
-}
-
 func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
@@ -37,6 +33,7 @@ func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		noOfQuestions = 20
 	}
+
 	err = json.NewDecoder(r.Body).Decode(&req)
 	if err != nil {
 		// log.Println("Invalid request body")
@@ -69,7 +66,7 @@ func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/json")
 
-	quizResponse := ResponseGetQuiz{
+	quizResponse := models.ResponseGetQuiz{
 		Questions: quiz,
 	}
 

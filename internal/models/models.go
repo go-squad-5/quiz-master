@@ -31,3 +31,7 @@ type ScoreResponse struct {
 	Ssid  string `json:"ssid"`
 	Score int    `json:"score"`
 }
+
+type ResponseGetQuiz struct {
+	Questions []Question `json:"questions"`
+}

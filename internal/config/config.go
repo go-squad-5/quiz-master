@@ -29,13 +29,9 @@ type Config struct {
 	Port        string
 	DSN         string
 	WorkerCount int
-	// and more fields...
 }
 
-func Load() *Config {
-	// TODO: Load configuration from environment variables, files, etc.
-	// For simplicity, returning a hardcoded config.
-
+func LoadConfig() *Config {
 	dbconfig := GetDBConfig()
 
 	dsn := os.Getenv("DB_DSN")
