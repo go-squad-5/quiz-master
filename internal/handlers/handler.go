@@ -52,11 +52,13 @@ func (h *handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		http.Error(w, "Error getting topic", http.StatusInternalServerError)
 		// log.Printf("Error getting questions: %v", err)
+		return
 	}
 
 	if len(quiz) < noOfQuestions {
 		// log.Println("No questions found for the given topic")
 		http.Error(w, "Not enough questions found", http.StatusInternalServerError)
+		return
 	}
 	t := len(quiz) - noOfQuestions
 	randomNumber := 0
@@ -67,6 +69,7 @@ func (h *handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 
 	if err := h.repo.CreateQuiz(ssid, quiz); err != nil {
 		http.Error(w, "Unable to create quiz", http.StatusInternalServerError)
+		return
 	}
 
 	w.Header().Set("Content-Type", "application/json")
@@ -77,6 +80,7 @@ func (h *handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 
 	if err := json.NewEncoder(w).Encode(quizResponse); err != nil {
 		http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+		return
 	}
 }
 

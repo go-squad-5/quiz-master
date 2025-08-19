@@ -11,13 +11,6 @@ import (
 	"github.com/go-squad-5/quiz-master/internal/models"
 )
 
-// type Repository interface {
-// 	GetAllQuestionByTopic(topic string) ([]models.Question, error)
-// 	GetQuestionsByIds(id []string) ([]models.Question, error)
-// 	CreateQuiz(string, []models.Question) error
-// 	StoreAnswers(string, string, string, bool) error
-// }
-
 type mockrepo struct{}
 
 func (*mockrepo) GetAllQuestionByTopic(topic string) ([]models.Question, error) {
@@ -153,11 +146,14 @@ func (*mockrepo) GetAllQuestionByTopic(topic string) ([]models.Question, error) 
 func (*mockrepo) GetQuestionsByIds(id []string) ([]models.Question, error) {
 	result := make([]models.Question, 0)
 	for _, v := range id {
+		if v == "invalid" {
+			return nil, fmt.Errorf("")
+		}
 		result = append(result, models.Question{
 			Id:       v,
 			Question: "ques1",
 			Options:  []string{"a", "b", "c", "c"},
-			Answer:   "",
+			Answer:   "a",
 		})
 	}
 	return result, nil
@@ -170,7 +166,10 @@ func (*mockrepo) CreateQuiz(ssid string, questions []models.Question) error {
 	return nil
 }
 
-func (*mockrepo) StoreAnswers(string, string, string, bool) error {
+func (*mockrepo) StoreAnswers(ssid, questionId, answer string, is_correct bool) error {
+	if ssid == "invalid" {
+		return fmt.Errorf("")
+	}
 	return nil
 }
 
@@ -196,7 +195,7 @@ func Test_GetQuiz(t *testing.T) {
 		{
 			name:             "invalid noOfQuestions",
 			method:           http.MethodPost,
-			url:              "/quiz/fetch?noOfQuestions=10",
+			url:              "/quiz/fetch?noOfQuestions=30",
 			body:             strings.NewReader(`{"topic": "valid", "ssid": "abc123"}`),
 			status:           http.StatusInternalServerError,
 			execptedResponse: "Not enough questions found\n",
@@ -215,7 +214,7 @@ func Test_GetQuiz(t *testing.T) {
 			body:             strings.NewReader(`{"topic": "invalid topic", "ssid": "abc123"}`),
 			url:              "/quiz/fetch",
 			status:           http.StatusInternalServerError,
-			execptedResponse: "Error getting topic",
+			execptedResponse: "Error getting topic\n",
 		},
 		{
 			name:             "invalid ssid",
@@ -225,15 +224,13 @@ func Test_GetQuiz(t *testing.T) {
 			status:           http.StatusInternalServerError,
 			execptedResponse: "Unable to create quiz\n",
 		},
-		// {
-		// 	name:             "valid request",
-		// 	method:           http.MethodPost,
-		// 	url:              "/quiz/fetch?noOfQuestions=2",
-		// 	body:             strings.NewReader(`{"topic": "valid", "ssid": "abc123"}`),
-		// 	status:           http.StatusOK,
-		// 	execptedResponse: json.Unmarshal(data []byte, v any),
-		// },
-		{},
+		{
+			name:   "valid request",
+			method: http.MethodPost,
+			url:    "/quiz/fetch?noOfQuestions=2",
+			body:   strings.NewReader(`{"topic": "valid", "ssid": "abc123"}`),
+			status: http.StatusOK,
+		},
 	}
 
 	for _, test := range tests {
@@ -249,8 +246,12 @@ func Test_GetQuiz(t *testing.T) {
 		// test body
 		body := rr.Body.String()
 
-		if body != test.execptedResponse {
-			t.Errorf("for %s, exepected body: %s, got: %s.", test.name, test.body, body)
+		if rr.Code == http.StatusOK {
+			if !strings.Contains(body, "{\"questions\"") {
+				t.Errorf("for %s, invalid body: %s", test.name, body)
+			}
+		} else if body != test.execptedResponse {
+			t.Errorf("for %s, exepected body: %s, got: %s.", test.name, test.execptedResponse, body)
 		}
 	}
 }
@@ -266,13 +267,52 @@ func Test_ScoreQuiz(t *testing.T) {
 		body             io.Reader
 		status           int
 		execptedResponse string
-	}{}
+	}{
+		{
+			name:             "invalid method",
+			method:           http.MethodPatch,
+			url:              "/quiz/score",
+			status:           http.StatusMethodNotAllowed,
+			execptedResponse: "Method Not Allowed\n",
+		},
+		{
+			name:             "invalid body",
+			method:           http.MethodPost,
+			url:              "/quiz/score",
+			body:             strings.NewReader("invalid body"),
+			status:           http.StatusBadRequest,
+			execptedResponse: "Invalid request body\n",
+		},
+		{
+			name:             "invalid question id",
+			method:           http.MethodPost,
+			url:              "/quiz/score",
+			body:             strings.NewReader(`{"ssid":"1","answers":[{"ques_id":"invalid","answer":"a"}]}`),
+			status:           http.StatusInternalServerError,
+			execptedResponse: "Error verifying questions\n",
+		},
+		{
+			name:             "invalid ssid",
+			method:           http.MethodPost,
+			url:              "/quiz/score",
+			body:             strings.NewReader(`{"ssid":"invalid","answers":[{"ques_id":"1","answer":"a"}]}`),
+			status:           http.StatusInternalServerError,
+			execptedResponse: "Failed to save answer\n",
+		},
+		{
+			name:   "successful response",
+			method: http.MethodPost,
+			url:    "/quiz/score",
+			body:   strings.NewReader(`{"ssid":"1","answers":[{"ques_id":"1","answer":"a"}]}`),
+			status: http.StatusOK,
+		},
+	}
 
 	for _, test := range tests {
 		rr := httptest.NewRecorder()
 		req := httptest.NewRequest(test.method, test.url, test.body)
 
-		h.GetQuiz(rr, req)
+		h.ScoreQuiz(rr, req)
 
 		// test status code
 		if rr.Code != test.status {
@@ -281,8 +321,12 @@ func Test_ScoreQuiz(t *testing.T) {
 		// test body
 		body := rr.Body.String()
 
-		if body != test.execptedResponse {
-			t.Errorf("for %s, exepected body: %s, got: %s.", test.name, test.body, body)
+		if rr.Code == http.StatusOK {
+			if !strings.Contains(body, `{"ssid":"`) {
+				t.Errorf("for %s, execpted body: %s, got: %s", test.name, test.execptedResponse, body)
+			}
+		} else if body != test.execptedResponse {
+			t.Errorf("for %s, exepected body: %s, got: %s.", test.name, test.execptedResponse, body)
 		}
 	}
 }
