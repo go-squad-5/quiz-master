@@ -3,7 +3,6 @@ package app
 import (
 	"bufio"
 	"bytes"
-	"fmt"
 	"io"
 	"log"
 	"math/rand"
@@ -18,13 +17,14 @@ func (app *App) HandleConn(connChannel <-chan net.Conn, id int) {
 
 		reader := bufio.NewReader(conn)
 
+		rw := newRW(conn)
 		req, err := http.ReadRequest(reader)
 		if err != nil {
-			fmt.Println("Failed to read request:", err)
+			http.Error(rw, "Invalid request", http.StatusBadRequest)
+			rw.Flush()
 			conn.Close()
 			return
 		}
-		rw := newRW(conn)
 		log.Println("routine: ", id, "processing request")
 		time.Sleep(time.Duration(rand.Intn(6)+1) * time.Second)
 		app.Router.ServeHTTP(rw, req)
