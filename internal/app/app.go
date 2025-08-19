@@ -3,18 +3,17 @@ package app
 import (
 	"log"
 	"net"
-	"time"
+	"net/http"
 
 	"github.com/go-squad-5/quiz-master/internal/config"
 	"github.com/go-squad-5/quiz-master/internal/repositories"
-	"github.com/go-squad-5/quiz-master/internal/router"
 )
 
 type App struct {
 	Config      *config.Config
 	Repository  repositories.Repository // and more fields... db, logger, etc.
 	ConnChannel chan net.Conn
-	router      *router.Router
+	Router      http.Handler
 }
 
 func (app *App) Serve() error {
@@ -35,11 +34,14 @@ func (app *App) Serve() error {
 	}
 }
 
-func IntializeWorkers(workerCount int, router *router.Router) chan net.Conn {
+func IntializeWorkers(
+	workerCount int,
+	worker func(<-chan net.Conn, int),
+) chan net.Conn {
 	connChannel := make(chan net.Conn)
 	for i := range workerCount {
-		go handleConn(connChannel, i, router)
-		time.Sleep(500 * time.Millisecond)
+		go worker(connChannel, i)
+		// time.Sleep(500 * time.Millisecond)
 	}
 	return connChannel
 }

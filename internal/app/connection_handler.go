@@ -10,11 +10,9 @@ import (
 	"net"
 	"net/http"
 	"time"
-
-	"github.com/go-squad-5/quiz-master/internal/router"
 )
 
-func handleConn(connChannel <-chan net.Conn, id int, router *router.Router) {
+func (app *App) HandleConn(connChannel <-chan net.Conn, id int) {
 	log.Println("handleConn ", id, " started")
 	for conn := range connChannel {
 
@@ -29,7 +27,7 @@ func handleConn(connChannel <-chan net.Conn, id int, router *router.Router) {
 		rw := newRW(conn)
 		log.Println("routine: ", id, "processing request")
 		time.Sleep(time.Duration(rand.Intn(6)+1) * time.Second)
-		router.ServeHTTP(rw, req)
+		app.Router.ServeHTTP(rw, req)
 		log.Println("routine: ", id, "sending response")
 		rw.Flush()
 		conn.Close()

@@ -10,17 +10,22 @@ import (
 	"github.com/go-squad-5/quiz-master/internal/repositories"
 )
 
-type Handler struct {
+type Handler interface {
+	GetQuiz(w http.ResponseWriter, r *http.Request)
+	ScoreQuiz(w http.ResponseWriter, r *http.Request)
+}
+
+type handler struct {
 	repo repositories.Repository
 }
 
 func NewHandler(repo repositories.Repository) Handler {
-	return Handler{
+	return &handler{
 		repo,
 	}
 }
 
-func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
+func (h *handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		// log.Println("Request recieved at invalid method want: ", http.MethodPost, "got: ", r.Method)
@@ -51,7 +56,7 @@ func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 
 	if len(quiz) < noOfQuestions {
 		// log.Println("No questions found for the given topic")
-		http.Error(w, "Not enough questions found", http.StatusNotFound)
+		http.Error(w, "Not enough questions found", http.StatusInternalServerError)
 	}
 	t := len(quiz) - noOfQuestions
 	randomNumber := 0
@@ -75,7 +80,7 @@ func (h *Handler) GetQuiz(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
-func (h *Handler) ScoreQuiz(w http.ResponseWriter, r *http.Request) {
+func (h *handler) ScoreQuiz(w http.ResponseWriter, r *http.Request) {
 	if r.Method != http.MethodPost {
 		http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
 		return

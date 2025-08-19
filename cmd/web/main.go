@@ -12,6 +12,7 @@ import (
 )
 
 func main() {
+	var application app.App
 	config := config.LoadConfig()
 
 	respository, err := repositories.NewMySQLRepository(config.DSN)
@@ -22,13 +23,12 @@ func main() {
 
 	handler := handlers.NewHandler(respository)
 	router := router.NewRouter(handler)
-	connChannel := app.IntializeWorkers(config.WorkerCount, router)
+	connChannel := app.IntializeWorkers(config.WorkerCount, application.HandleConn)
 
-	application := &app.App{
-		Config:      config,
-		Repository:  respository,
-		ConnChannel: connChannel,
-	}
+	application.Config = config
+	application.Repository = respository
+	application.ConnChannel = connChannel
+	application.Router = router
 
 	log.Fatal(application.Serve())
 }
