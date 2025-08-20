@@ -54,7 +54,7 @@ func (r *quizRepository) GetAllQuestionByTopic(topic string) ([]models.Question,
 		quiz = append(quiz, q)
 	}
 	if err = rows.Err(); err != nil {
-		return nil, err
+		return nil, fmt.Errorf("rows error: %s", err)
 	}
 
 	return quiz, nil
