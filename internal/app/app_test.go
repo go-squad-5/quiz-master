@@ -3,9 +3,9 @@ package app
 import (
 	"bufio"
 	"fmt"
-	"io"
 	"log"
 	"net"
+	"sync"
 	"testing"
 	"time"
 
@@ -51,13 +51,7 @@ func Test_Serve(t *testing.T) {
 }
 
 func Test_intializeWorkers(t *testing.T) {
-	log.SetOutput(io.Discard)
-	// req := "GET / HTTP/1.1\r\nHost: localhost\r\n\r\n"
-	// router := http.NewServeMux()
-	//
-	// router.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-	// 	w.Write([]byte("request received"))
-	// })
+	// log.SetOutput(io.Discard)
 
 	tests := []struct {
 		name  string
@@ -81,72 +75,62 @@ func Test_intializeWorkers(t *testing.T) {
 	time.Sleep(1 * time.Second)
 
 	for _, test := range tests {
+		func() {
+			clientConn := make([]net.Conn, test.count)
+			serverConn := make([]net.Conn, test.count)
 
-		clientConn := make([]net.Conn, test.count)
-		serverConn := make([]net.Conn, test.count)
-
-		for i := range test.count {
-			clientConn[i], serverConn[i] = net.Pipe()
-		}
-
-		// var wg sync.WaitGroup
-		for i := range test.count {
-			go func(i int) {
-				ConnChannel <- serverConn[i]
-				time.Sleep(time.Millisecond)
-
-				clientConn[i].Write([]byte("send request"))
-				// _, err := clientConn[i].Write([]byte("send request"))
-				// if err != nil {
-				// 	t.Errorf("Failed to write to reqeust to connection for %s", test.name)
-				// }
-			}(i)
-		}
-
-		for i := range test.count {
-
-			reader := bufio.NewReader(clientConn[i])
-			resp := make([]byte, 16)
-			_, err := reader.Read(resp)
-			if err != nil {
-				t.Errorf("failed to read response for %s", test.name)
-			}
-			if string(resp) != "request received" {
-				t.Errorf(
-					"for %s Expected response to be %s got %s",
-					test.name,
-					"request received",
-					string(resp),
-				)
+			for i := range test.count {
+				clientConn[i], serverConn[i] = net.Pipe()
+				defer clientConn[i].Close()
 			}
 
-			// if err != nil {
-			// 	t.Fatalf("Failed to parse response: %v", err)
-			// }
-			// defer resp.Body.Close()
+			wg := sync.WaitGroup{}
+			for i := range test.count {
+				wg.Add(1)
+				go func(i int) {
+					defer wg.Done()
+					ConnChannel <- serverConn[i]
 
-			// body, err := io.ReadAll(resp.Body)
-			// if err != nil {
-			// 	t.Fatalf("Failed to read response body: %v", err)
-			// }
-			//
-			// if string(body) != "request received" {
-			// 	t.Errorf("Expected body to be %q, got %q", "request received", string(body))
-			// }
+					_, err := clientConn[i].Write([]byte("send request\r\n"))
+					if err != nil {
+						t.Errorf("Failed to write to reqeust to connection: %s", err.Error())
+					}
+				}(i)
+			}
 
-		}
+			for i := range test.count {
 
-		for i := range test.count {
-			serverConn[i].Close()
-			clientConn[i].Close()
-		}
+				reader := bufio.NewReader(clientConn[i])
+				resp := make([]byte, 50)
+				n, err := reader.Read(resp)
+				resp = resp[:n]
+				if err != nil {
+					t.Errorf("failed to read response for %s", test.name)
+				}
+				if string(resp) != "request received" {
+					t.Errorf(
+						"for %s Expected response to be %s got %s",
+						test.name,
+						"request received",
+						string(resp),
+					)
+				}
+			}
+			wg.Wait()
+		}()
 	}
 }
 
 func worker(channel <-chan net.Conn, id int) {
 	for conn := range channel {
+		resp := make([]byte, 50)
+		_, err := conn.Read(resp)
+		if err != nil {
+			log.Println("%w", err)
+		}
 
 		conn.Write([]byte("request received"))
+		time.Sleep(1 * time.Second)
 		conn.Close()
 
 	}
