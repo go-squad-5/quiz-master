@@ -77,7 +77,7 @@ func (r *quizRepository) GetQuestionsByIds(ids []string) ([]models.Question, err
 
 	rows, err := r.db.Query(query, args...)
 	if err != nil {
-		return nil, fmt.Errorf("query failed: %w", err)
+		return nil, fmt.Errorf("query failed: %v", err)
 	}
 	defer rows.Close()
 
@@ -85,13 +85,13 @@ func (r *quizRepository) GetQuestionsByIds(ids []string) ([]models.Question, err
 	for rows.Next() {
 		var q models.Question
 		if err := rows.Scan(&q.Id, &q.Answer); err != nil {
-			return nil, fmt.Errorf("failed to scan question: %w", err)
+			return nil, fmt.Errorf("failed to scan question: %v", err)
 		}
 		questions = append(questions, q)
 	}
 
 	if err := rows.Err(); err != nil {
-		return nil, fmt.Errorf("row error: %w", err)
+		return nil, fmt.Errorf("row error: %v", err)
 	}
 
 	return questions, nil
