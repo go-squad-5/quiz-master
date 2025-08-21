@@ -50,3 +50,5 @@ go tool cover -html=coverage.out
 ```bash
 set -o pipefail && go test -cover -coverprofile=coverage.out -json ./... | tparse -all
 ```
+
+### For detailed report you can checkout [here](https://go-squad-5.github.io/quiz-master/#file0)
