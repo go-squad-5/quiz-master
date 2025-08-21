@@ -30,5 +30,5 @@ func main() {
 	application.ConnChannel = connChannel
 	application.Router = router
 
-	log.Fatal(application.Serve())
+	log.Fatal(application.Serve(app.GetListener(application.Config.Port)))
 }

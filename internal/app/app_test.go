@@ -2,9 +2,13 @@ package app
 
 import (
 	"bufio"
-	"fmt"
+	"bytes"
+	"errors"
+	"io"
 	"log"
 	"net"
+	"os"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -13,7 +17,39 @@ import (
 	// "github.com/go-squad-5/quiz-master/internal/repositories"
 )
 
-func Test_Serve(t *testing.T) {
+type mockListener struct {
+	acceptSendError bool
+	calledAccept    bool
+}
+
+func (m *mockListener) Accept() (net.Conn, error) {
+	if m.calledAccept {
+		// time.Sleep(1 * time.Minute)
+		wg := sync.WaitGroup{}
+		wg.Add(1)
+		wg.Wait()
+	}
+	m.calledAccept = true
+	if m.acceptSendError {
+		return nil, errors.New("got error calling accept")
+	}
+
+	return &net.TCPConn{}, nil
+}
+
+func (m mockListener) Listen() (net.Listener, error) {
+	return nil, nil
+}
+
+func (m mockListener) Addr() net.Addr {
+	return nil
+}
+
+func (m mockListener) Close() error {
+	return nil
+}
+
+func Test_Serve_AcceptWithoutError(t *testing.T) {
 	app := App{
 		Config: &config.Config{
 			Port:        ":8090",
@@ -25,7 +61,7 @@ func Test_Serve(t *testing.T) {
 	}
 
 	go func() {
-		err := app.Serve()
+		err := app.Serve(&mockListener{acceptSendError: false, calledAccept: false})
 		if err != nil {
 			t.Errorf("Server error: %v", err)
 		}
@@ -33,12 +69,12 @@ func Test_Serve(t *testing.T) {
 	// waiting for server to start
 	time.Sleep(1 * time.Second)
 
-	conn, err := net.Dial("tcp", fmt.Sprintf("localhost%s", app.Config.Port))
-	if err != nil {
-		t.Errorf("Sending connection to server and failed.")
-		return
-	}
-	defer conn.Close()
+	// conn, err := net.Dial("tcp", fmt.Sprintf("localhost%s", app.Config.Port))
+	// if err != nil {
+	// 	t.Errorf("Sending connection to server and failed.")
+	// 	return
+	// }
+	// defer conn.Close()
 
 	select {
 	case recieveSentRequest := <-app.ConnChannel:
@@ -50,8 +86,39 @@ func Test_Serve(t *testing.T) {
 	}
 }
 
+func Test_Serve_AcceptWithError(t *testing.T) {
+	var buf bytes.Buffer
+	log.SetOutput(&buf)
+
+	app := App{
+		Config: &config.Config{
+			Port:        ":8090",
+			DSN:         "jjj",
+			WorkerCount: 9,
+		},
+		ConnChannel: make(chan net.Conn),
+	}
+
+	go func() {
+		err := app.Serve(&mockListener{acceptSendError: true, calledAccept: false})
+		if err != nil {
+			t.Errorf("Server error: %v", err)
+		}
+	}()
+	// waiting for server to start
+	time.Sleep(1 * time.Second)
+
+	log.SetOutput(os.Stdout)
+	output := buf.String()
+	expected := "got error calling accept"
+
+	if !strings.Contains(output, expected) {
+		t.Errorf("expected error: %s, got error: %s.", expected, output)
+	}
+}
+
 func Test_intializeWorkers(t *testing.T) {
-	// log.SetOutput(io.Discard)
+	log.SetOutput(io.Discard)
 
 	tests := []struct {
 		name  string

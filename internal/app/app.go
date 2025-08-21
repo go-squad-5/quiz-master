@@ -16,13 +16,7 @@ type App struct {
 	Router      http.Handler
 }
 
-func (app *App) Serve() error {
-	ln, err := net.Listen("tcp", app.Config.Port)
-	if err != nil {
-		return err
-	}
-	log.Println("Listening on port: ", app.Config.Port)
-
+func (app *App) Serve(ln net.Listener) error {
 	for {
 		conn, err := ln.Accept()
 		if err != nil {
@@ -32,6 +26,15 @@ func (app *App) Serve() error {
 
 		app.ConnChannel <- conn
 	}
+}
+
+func getListener(port string) net.Listener {
+	ln, err := net.Listen("tcp", port)
+	if err != nil {
+		log.Fatal("can't connect to port", port, ", err: %s", err.Error())
+	}
+	log.Println("Listening on port: ", port)
+	return ln
 }
 
 func IntializeWorkers(
