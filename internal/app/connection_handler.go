@@ -13,6 +13,7 @@ import (
 
 func (app *App) HandleConn(connChannel <-chan net.Conn, id int) {
 	log.Println("handleConn ", id, " started")
+	requestNum := 1
 	for conn := range connChannel {
 
 		reader := bufio.NewReader(conn)
@@ -25,10 +26,22 @@ func (app *App) HandleConn(connChannel <-chan net.Conn, id int) {
 			conn.Close()
 			return
 		}
-		log.Println("routine: ", id, "processing request")
+		log.Printf(
+			"routine: %d processing request\t\t%s\trequest id: %d_%d",
+			id,
+			req.URL,
+			id,
+			requestNum,
+		)
 		time.Sleep(time.Duration(rand.Intn(6)+1) * time.Second)
 		app.Router.ServeHTTP(rw, req)
-		log.Println("routine: ", id, "sending response")
+		log.Printf(
+			"routine: %d sending response for request\t%s\trequest id: %d_%d",
+			id,
+			req.URL,
+			id,
+			requestNum,
+		)
 		rw.Flush()
 		conn.Close()
 	}

@@ -28,7 +28,7 @@ func (app *App) Serve(ln net.Listener) error {
 	}
 }
 
-func getListener(port string) net.Listener {
+func GetListener(port string) net.Listener {
 	ln, err := net.Listen("tcp", port)
 	if err != nil {
 		log.Fatal("can't connect to port", port, ", err: %s", err.Error())
