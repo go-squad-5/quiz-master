@@ -1,0 +1,660 @@
+
+<!DOCTYPE html>
+<html>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+		<title>web: Go Coverage Report</title>
+		<style>
+			body {
+				background: black;
+				color: rgb(80, 80, 80);
+			}
+			body, pre, #legend span {
+				font-family: Menlo, monospace;
+				font-weight: bold;
+			}
+			#topbar {
+				background: black;
+				position: fixed;
+				top: 0; left: 0; right: 0;
+				height: 42px;
+				border-bottom: 1px solid rgb(80, 80, 80);
+			}
+			#content {
+				margin-top: 50px;
+			}
+			#nav, #legend {
+				float: left;
+				margin-left: 10px;
+			}
+			#legend {
+				margin-top: 12px;
+			}
+			#nav {
+				margin-top: 10px;
+			}
+			#legend span {
+				margin: 0 5px;
+			}
+			.cov0 { color: rgb(192, 0, 0) }
+.cov1 { color: rgb(128, 128, 128) }
+.cov2 { color: rgb(116, 140, 131) }
+.cov3 { color: rgb(104, 152, 134) }
+.cov4 { color: rgb(92, 164, 137) }
+.cov5 { color: rgb(80, 176, 140) }
+.cov6 { color: rgb(68, 188, 143) }
+.cov7 { color: rgb(56, 200, 146) }
+.cov8 { color: rgb(44, 212, 149) }
+.cov9 { color: rgb(32, 224, 152) }
+.cov10 { color: rgb(20, 236, 155) }
+
+		</style>
+	</head>
+	<body>
+		<div id="topbar">
+			<div id="nav">
+				<select id="files">
+				
+				<option value="file0">github.com/go-squad-5/quiz-master/cmd/web/main.go (0.0%)</option>
+				
+				<option value="file1">github.com/go-squad-5/quiz-master/internal/app/app.go (66.7%)</option>
+				
+				<option value="file2">github.com/go-squad-5/quiz-master/internal/app/connection_handler.go (100.0%)</option>
+				
+				<option value="file3">github.com/go-squad-5/quiz-master/internal/config/config.go (0.0%)</option>
+				
+				<option value="file4">github.com/go-squad-5/quiz-master/internal/handlers/handler.go (96.9%)</option>
+				
+				<option value="file5">github.com/go-squad-5/quiz-master/internal/repositories/mysql_quiz_repository.go (83.6%)</option>
+				
+				<option value="file6">github.com/go-squad-5/quiz-master/internal/router/router.go (100.0%)</option>
+				
+				</select>
+			</div>
+			<div id="legend">
+				<span>not tracked</span>
+			
+				<span class="cov0">not covered</span>
+				<span class="cov8">covered</span>
+			
+			</div>
+		</div>
+		<div id="content">
+		
+		<pre class="file" id="file0" style="display: none">package main
+
+import (
+        "log"
+
+        _ "github.com/go-sql-driver/mysql"
+        "github.com/go-squad-5/quiz-master/internal/app"
+        "github.com/go-squad-5/quiz-master/internal/config"
+        "github.com/go-squad-5/quiz-master/internal/handlers"
+        "github.com/go-squad-5/quiz-master/internal/repositories"
+        "github.com/go-squad-5/quiz-master/internal/router"
+)
+
+func main() <span class="cov0" title="0">{
+        var application app.App
+        config := config.LoadConfig()
+
+        respository, err := repositories.NewMySQLRepository(config.DSN)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatalf("Failed to connect to DB: %v", err)
+        }</span>
+        <span class="cov0" title="0">log.Println("Connected to MySQL!")
+
+        handler := handlers.NewHandler(respository)
+        router := router.NewRouter(handler)
+        connChannel := app.IntializeWorkers(config.WorkerCount, application.HandleConn)
+
+        application.Config = config
+        application.Repository = respository
+        application.ConnChannel = connChannel
+        application.Router = router
+
+        log.Fatal(application.Serve(app.GetListener(application.Config.Port)))</span>
+}
+</pre>
+		
+		<pre class="file" id="file1" style="display: none">package app
+
+import (
+        "log"
+        "net"
+        "net/http"
+
+        "github.com/go-squad-5/quiz-master/internal/config"
+        "github.com/go-squad-5/quiz-master/internal/repositories"
+)
+
+type App struct {
+        Config      *config.Config
+        Repository  repositories.Repository // and more fields... db, logger, etc.
+        ConnChannel chan net.Conn
+        Router      http.Handler
+}
+
+func (app *App) Serve(ln net.Listener) error <span class="cov8" title="1">{
+        for </span><span class="cov8" title="1">{
+                conn, err := ln.Accept()
+                if err != nil </span><span class="cov8" title="1">{
+                        log.Println("Failed to accept:", err)
+                        continue</span>
+                }
+
+                <span class="cov8" title="1">app.ConnChannel &lt;- conn</span>
+        }
+}
+
+func GetListener(port string) net.Listener <span class="cov0" title="0">{
+        ln, err := net.Listen("tcp", port)
+        if err != nil </span><span class="cov0" title="0">{
+                log.Fatal("can't connect to port", port, ", err: %s", err.Error())
+        }</span>
+        <span class="cov0" title="0">log.Println("Listening on port: ", port)
+        return ln</span>
+}
+
+func IntializeWorkers(
+        workerCount int,
+        worker func(&lt;-chan net.Conn, int),
+) chan net.Conn <span class="cov8" title="1">{
+        connChannel := make(chan net.Conn)
+        for i := range workerCount </span><span class="cov8" title="1">{
+                go worker(connChannel, i)
+                // time.Sleep(500 * time.Millisecond)
+        }</span>
+        <span class="cov8" title="1">return connChannel</span>
+}
+</pre>
+		
+		<pre class="file" id="file2" style="display: none">package app
+
+import (
+        "bufio"
+        "bytes"
+        "io"
+        "log"
+        "math/rand"
+        "net"
+        "net/http"
+        "time"
+)
+
+func (app *App) HandleConn(connChannel &lt;-chan net.Conn, id int) <span class="cov8" title="1">{
+        log.Println("handleConn ", id, " started")
+        requestNum := 1
+        for conn := range connChannel </span><span class="cov8" title="1">{
+
+                reader := bufio.NewReader(conn)
+
+                rw := newRW(conn)
+                req, err := http.ReadRequest(reader)
+                if err != nil </span><span class="cov8" title="1">{
+                        http.Error(rw, "Invalid request", http.StatusBadRequest)
+                        rw.Flush()
+                        conn.Close()
+                        return
+                }</span>
+                <span class="cov8" title="1">log.Printf(
+                        "routine: %d processing request\t\t%s\trequest id: %d_%d",
+                        id,
+                        req.URL,
+                        id,
+                        requestNum,
+                )
+                time.Sleep(time.Duration(rand.Intn(6)+1) * time.Second)
+                app.Router.ServeHTTP(rw, req)
+                log.Printf(
+                        "routine: %d sending response for request\t%s\trequest id: %d_%d",
+                        id,
+                        req.URL,
+                        id,
+                        requestNum,
+                )
+                rw.Flush()
+                conn.Close()</span>
+        }
+}
+
+type rw struct {
+        resp        *http.Response
+        conn        net.Conn
+        body        *bytes.Buffer
+        wroteHeader bool
+}
+
+func newRW(conn net.Conn) *rw <span class="cov8" title="1">{
+        return &amp;rw{
+                conn: conn,
+                body: new(bytes.Buffer),
+                resp: &amp;http.Response{
+                        Proto:      "HTTP/1.1",
+                        ProtoMajor: 1,
+                        ProtoMinor: 1,
+                        Header:     make(http.Header),
+                        StatusCode: http.StatusOK,
+                },
+        }
+}</span>
+
+func (rw *rw) Header() http.Header <span class="cov8" title="1">{
+        return rw.resp.Header
+}</span>
+
+func (rw *rw) WriteHeader(statusCode int) <span class="cov8" title="1">{
+        if rw.wroteHeader </span><span class="cov8" title="1">{
+                return
+        }</span>
+        <span class="cov8" title="1">rw.resp.StatusCode = statusCode
+        rw.wroteHeader = true</span>
+}
+
+func (rw *rw) Write(data []byte) (int, error) <span class="cov8" title="1">{
+        if !rw.wroteHeader </span><span class="cov8" title="1">{
+                rw.WriteHeader(http.StatusOK)
+        }</span>
+        <span class="cov8" title="1">return rw.body.Write(data)</span>
+}
+
+func (rw *rw) Flush() error <span class="cov8" title="1">{
+        rw.resp.Body = io.NopCloser(rw.body)
+        rw.resp.ContentLength = int64(rw.body.Len())
+        return rw.resp.Write(rw.conn)
+}</span>
+</pre>
+		
+		<pre class="file" id="file3" style="display: none">package config
+
+import (
+        "fmt"
+        "os"
+
+        _ "github.com/joho/godotenv/autoload"
+)
+
+type DBConfig struct {
+        User     string
+        Password string
+        Host     string
+        Port     string
+        DBName   string
+}
+
+func GetDBConfig() DBConfig <span class="cov0" title="0">{
+        return DBConfig{
+                User:     "quizuser",
+                Password: "quizpass",
+                Host:     "localhost",
+                Port:     "3306",
+                DBName:   "quizdb",
+        }
+}</span>
+
+type Config struct {
+        Port        string
+        DSN         string
+        WorkerCount int
+}
+
+func LoadConfig() *Config <span class="cov0" title="0">{
+        dbconfig := GetDBConfig()
+
+        dsn := os.Getenv("DB_DSN")
+
+        if dsn == "" </span><span class="cov0" title="0">{
+                dsn = fmt.Sprintf("%s:%s@tcp(%s:%s)/%s",
+                        dbconfig.User, dbconfig.Password, dbconfig.Host, dbconfig.Port, dbconfig.DBName,
+                )
+        }</span>
+
+        <span class="cov0" title="0">return &amp;Config{
+                Port:        ":8090",
+                DSN:         dsn,
+                WorkerCount: 10,
+        }</span>
+}
+</pre>
+		
+		<pre class="file" id="file4" style="display: none">package handlers
+
+import (
+        "encoding/json"
+        "math/rand"
+        "net/http"
+        "strconv"
+
+        "github.com/go-squad-5/quiz-master/internal/models"
+        "github.com/go-squad-5/quiz-master/internal/repositories"
+)
+
+type Handler interface {
+        GetQuiz(w http.ResponseWriter, r *http.Request)
+        ScoreQuiz(w http.ResponseWriter, r *http.Request)
+}
+
+type handler struct {
+        repo repositories.Repository
+}
+
+func NewHandler(repo repositories.Repository) Handler <span class="cov8" title="1">{
+        return &amp;handler{
+                repo,
+        }
+}</span>
+
+func (h *handler) GetQuiz(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        if r.Method != http.MethodPost </span><span class="cov8" title="1">{
+                http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+                // log.Println("Request recieved at invalid method want: ", http.MethodPost, "got: ", r.Method)
+                return
+        }</span>
+
+        <span class="cov8" title="1">var req models.CreateQuizBody
+
+        noOfQuestions, err := strconv.Atoi(r.URL.Query().Get("noOfQuestions"))
+        if err != nil </span><span class="cov8" title="1">{
+                noOfQuestions = 20
+        }</span>
+
+        <span class="cov8" title="1">err = json.NewDecoder(r.Body).Decode(&amp;req)
+        if err != nil </span><span class="cov8" title="1">{
+                // log.Println("Invalid request body")
+                http.Error(w, "Invalid request body", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">ssid := req.Ssid
+
+        quiz, err := h.repo.GetAllQuestionByTopic(req.Topic)
+        if err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Error getting topic", http.StatusInternalServerError)
+                // log.Printf("Error getting questions: %v", err)
+                return
+        }</span>
+
+        <span class="cov8" title="1">if len(quiz) &lt; noOfQuestions </span><span class="cov8" title="1">{
+                // log.Println("No questions found for the given topic")
+                http.Error(w, "Not enough questions found", http.StatusInternalServerError)
+                return
+        }</span>
+        <span class="cov8" title="1">t := len(quiz) - noOfQuestions
+        randomNumber := 0
+        if t &gt; 0 </span><span class="cov8" title="1">{
+                randomNumber = rand.Intn(t)
+        }</span>
+        <span class="cov8" title="1">quiz = quiz[randomNumber : randomNumber+noOfQuestions]
+
+        if err := h.repo.CreateQuiz(ssid, quiz); err != nil </span><span class="cov8" title="1">{
+                http.Error(w, "Unable to create quiz", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">w.Header().Set("Content-Type", "application/json")
+
+        quizResponse := models.ResponseGetQuiz{
+                Questions: quiz,
+        }
+
+        if err := json.NewEncoder(w).Encode(quizResponse); err != nil </span><span class="cov0" title="0">{
+                http.Error(w, "Failed to encode response", http.StatusInternalServerError)
+                return
+        }</span>
+}
+
+func (h *handler) ScoreQuiz(w http.ResponseWriter, r *http.Request) <span class="cov8" title="1">{
+        if r.Method != http.MethodPost </span><span class="cov8" title="1">{
+                http.Error(w, "Method Not Allowed", http.StatusMethodNotAllowed)
+                return
+        }</span>
+
+        <span class="cov8" title="1">var req models.ScoreQuizBody
+        var score int
+
+        err := json.NewDecoder(r.Body).Decode(&amp;req)
+        if err != nil </span><span class="cov8" title="1">{
+                // log.Printf("error: %v\n", err)
+                http.Error(w, "Invalid request body", http.StatusBadRequest)
+                return
+        }</span>
+
+        <span class="cov8" title="1">ids := make([]string, 0, len(req.Answers))
+
+        for _, answer := range req.Answers </span><span class="cov8" title="1">{
+                ids = append(ids, answer.Id)
+        }</span>
+
+        <span class="cov8" title="1">questions, err := h.repo.GetQuestionsByIds(ids)
+        if err != nil </span><span class="cov8" title="1">{
+                // log.Println(err)
+                http.Error(w, "Error verifying questions", http.StatusInternalServerError)
+                return
+        }</span>
+
+        <span class="cov8" title="1">for _, question := range questions </span><span class="cov8" title="1">{
+                for _, reqQuestion := range req.Answers </span><span class="cov8" title="1">{
+                        if reqQuestion.Id == question.Id </span><span class="cov8" title="1">{
+                                channel := make(chan error)
+                                go func(
+                                        ssid,
+                                        quesionId,
+                                        answer string,
+                                        isCorrect bool,
+                                        channel chan&lt;- error,
+                                ) </span><span class="cov8" title="1">{
+                                        channel &lt;- h.repo.StoreAnswers(ssid, quesionId, answer, isCorrect)
+                                }</span>(req.Ssid, question.Id, reqQuestion.Answer, reqQuestion.Answer == question.Answer, channel)
+                                <span class="cov8" title="1">err := &lt;-channel
+                                if err != nil </span><span class="cov8" title="1">{
+                                        // log.Println("Failed to save answer: ", err)
+                                        http.Error(w, "Failed to save answer", http.StatusInternalServerError)
+                                        return
+                                }</span>
+                                <span class="cov8" title="1">if reqQuestion.Answer == question.Answer </span><span class="cov8" title="1">{
+                                        score++
+                                        break</span>
+                                }
+                        }
+                }
+        }
+
+        <span class="cov8" title="1">w.Header().Set("Content-Type", "application/json")
+        w.WriteHeader(http.StatusOK)
+        json.NewEncoder(w).Encode(models.ScoreResponse{
+                Ssid:  req.Ssid,
+                Score: score,
+        })</span>
+}
+</pre>
+		
+		<pre class="file" id="file5" style="display: none">package repositories
+
+import (
+        "database/sql"
+        "encoding/json"
+        "fmt"
+        "strings"
+
+        "github.com/go-squad-5/quiz-master/internal/models"
+)
+
+type quizRepository struct {
+        db *sql.DB
+}
+
+func NewMySQLRepository(dsn string) (Repository, error) <span class="cov0" title="0">{
+        db, err := sql.Open("mysql", dsn)
+        if err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("failed to open DB: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">if err := db.Ping(); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("database unreachable: %w", err)
+        }</span>
+
+        <span class="cov0" title="0">fmt.Println("Connected to Db!")
+
+        return &amp;quizRepository{
+                db: db,
+        }, nil</span>
+}
+
+func (r *quizRepository) GetAllQuestionByTopic(topic string) ([]models.Question, error) <span class="cov8" title="1">{
+        rows, err := r.db.Query("SELECT id, question, options FROM questions WHERE topic = ?", topic)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, err
+        }</span>
+        <span class="cov8" title="1">defer rows.Close()
+
+        var quiz []models.Question
+
+        for rows.Next() </span><span class="cov8" title="1">{
+                var optionsJSON []byte
+                var q models.Question
+                err := rows.Scan(&amp;q.Id, &amp;q.Question, &amp;optionsJSON)
+                if err != nil </span><span class="cov8" title="1">{
+                        return nil, err
+                }</span>
+
+                <span class="cov8" title="1">if err := json.Unmarshal(optionsJSON, &amp;q.Options); err != nil </span><span class="cov8" title="1">{
+                        return nil, fmt.Errorf("failed to unmarshal options: %w", err)
+                }</span>
+
+                <span class="cov8" title="1">quiz = append(quiz, q)</span>
+        }
+        <span class="cov8" title="1">if err = rows.Err(); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("rows error: %s", err)
+        }</span>
+
+        <span class="cov8" title="1">return quiz, nil</span>
+}
+
+func (r *quizRepository) GetQuestionsByIds(ids []string) ([]models.Question, error) <span class="cov8" title="1">{
+        if len(ids) == 0 </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("no question IDs provided")
+        }</span>
+
+        <span class="cov8" title="1">placeholders := strings.Repeat("?,", len(ids))
+        placeholders = placeholders[:len(placeholders)-1]
+
+        query := fmt.Sprintf("SELECT id, answer FROM questions WHERE id IN (%s)", placeholders)
+
+        args := make([]any, len(ids))
+        for i, id := range ids </span><span class="cov8" title="1">{
+                args[i] = id
+        }</span>
+
+        <span class="cov8" title="1">rows, err := r.db.Query(query, args...)
+        if err != nil </span><span class="cov8" title="1">{
+                return nil, fmt.Errorf("query failed: %v", err)
+        }</span>
+        <span class="cov8" title="1">defer rows.Close()
+
+        var questions []models.Question
+        for rows.Next() </span><span class="cov8" title="1">{
+                var q models.Question
+                if err := rows.Scan(&amp;q.Id, &amp;q.Answer); err != nil </span><span class="cov8" title="1">{
+                        return nil, fmt.Errorf("failed to scan question: %v", err)
+                }</span>
+                <span class="cov8" title="1">questions = append(questions, q)</span>
+        }
+
+        <span class="cov8" title="1">if err := rows.Err(); err != nil </span><span class="cov0" title="0">{
+                return nil, fmt.Errorf("row error: %v", err)
+        }</span>
+
+        <span class="cov8" title="1">return questions, nil</span>
+}
+
+func (r *quizRepository) CreateQuiz(ssid string, questions []models.Question) error <span class="cov8" title="1">{
+        for _, question := range questions </span><span class="cov8" title="1">{
+                _, err := r.db.Exec(
+                        "INSERT INTO quizzes (session_id, question_id) VALUES (?, ?)",
+                        ssid,
+                        question.Id,
+                )
+                if err != nil </span><span class="cov8" title="1">{
+                        return err
+                }</span>
+        }
+
+        <span class="cov8" title="1">return nil</span>
+}
+
+func (r *quizRepository) StoreAnswers(ssid, questionId, answer string, is_correct bool) error <span class="cov8" title="1">{
+        query := `UPDATE quizzes SET answer = ?, is_correct = ? WHERE session_id = ? and question_id = ?`
+
+        _, err := r.db.Exec(query, answer, is_correct, ssid, questionId)
+        if err != nil </span><span class="cov8" title="1">{
+                return fmt.Errorf("failed to store answer: %w", err)
+        }</span>
+        <span class="cov8" title="1">return nil</span>
+}
+</pre>
+		
+		<pre class="file" id="file6" style="display: none">// router/router.go
+package router
+
+import (
+        "net/http"
+
+        "github.com/go-squad-5/quiz-master/internal/handlers"
+)
+
+var currenctNum = 0
+
+type Router struct {
+        handlers handlers.Handler
+}
+
+func NewRouter(handler handlers.Handler) *Router <span class="cov8" title="1">{
+        return &amp;Router{
+                handlers: handler,
+        }
+}</span>
+
+func (r *Router) ServeHTTP(w http.ResponseWriter, req *http.Request) <span class="cov8" title="1">{
+        path := req.URL.Path
+
+        switch path </span>{
+        case "/quiz/fetch":<span class="cov8" title="1">
+                r.handlers.GetQuiz(w, req)</span>
+        case "/quiz/score":<span class="cov8" title="1">
+                r.handlers.ScoreQuiz(w, req)</span>
+        default:<span class="cov8" title="1">
+                http.NotFound(w, req)</span>
+        }
+}
+</pre>
+		
+		</div>
+	</body>
+	<script>
+	(function() {
+		var files = document.getElementById('files');
+		var visible;
+		files.addEventListener('change', onChange, false);
+		function select(part) {
+			if (visible)
+				visible.style.display = 'none';
+			visible = document.getElementById(part);
+			if (!visible)
+				return;
+			files.value = part;
+			visible.style.display = 'block';
+			location.hash = part;
+		}
+		function onChange() {
+			select(files.value);
+			window.scrollTo(0, 0);
+		}
+		if (location.hash != "") {
+			select(location.hash.substr(1));
+		}
+		if (!visible) {
+			select("file0");
+		}
+	})();
+	</script>
+</html>

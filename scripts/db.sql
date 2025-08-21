@@ -1,4 +1,22 @@
--- Golang Questions
+CREATE TABLE `questions` (
+  `id` CHAR(36) NOT NULL DEFAULT (uuid()),
+  `question` TEXT NOT NULL,
+  `options` JSON NOT NULL,
+  `answer` VARCHAR(255) NOT NULL,
+  `topic` VARCHAR(100) NOT NULL,
+  PRIMARY KEY (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+CREATE TABLE `quizzes` (
+  `id` INT NOT NULL AUTO_INCREMENT,
+  `session_id` CHAR(36) NOT NULL,
+  `question_id` CHAR(36) NOT NULL,
+  `answer` TEXT,
+  `is_correct` TINYINT(1),
+  PRIMARY KEY (`id`),
+  KEY `question_id` (`question_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
 INSERT INTO questions (`question`, `options`, `answer`, `topic`) VALUES
 ('Which Go package is the standard interface for interacting with databases?', '["database/sql", "mysql", "sqlx", "gorm"]', 'database/sql', 'go'),
 ('What function is used to open a database connection in Go?', '["sql.Open()", "database.Connect()", "sql.Connect()", "db.Open()"]', 'sql.Open()', 'go'),

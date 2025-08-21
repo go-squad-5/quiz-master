@@ -3,3 +3,4 @@ docs/swagger/
 bin/
 *.out
 *.html
+!docs/index.html
