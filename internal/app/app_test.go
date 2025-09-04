@@ -14,7 +14,6 @@ import (
 	"time"
 
 	"github.com/go-squad-5/quiz-master/internal/config"
-	// "github.com/go-squad-5/quiz-master/internal/repositories"
 )
 
 type mockListener struct {
@@ -108,7 +107,7 @@ func Test_Serve_AcceptWithError(t *testing.T) {
 	// waiting for server to start
 	time.Sleep(1 * time.Second)
 
-	log.SetOutput(os.Stdout)
+	log.SetOutput(os.Stderr)
 	output := buf.String()
 	expected := "got error calling accept"
 
@@ -125,15 +124,15 @@ func Test_intializeWorkers(t *testing.T) {
 		count int
 	}{
 		{
-			name:  "test sending 1 request",
+			name:  "test sending 1 request, less than workers count",
 			count: 1,
 		},
 		{
-			name:  "test sending 2 request",
+			name:  "test sending 2 request, equal to worker count",
 			count: 2,
 		},
 		{
-			name:  "test sending 3 request",
+			name:  "test sending 3 request, more than worker count",
 			count: 3,
 		},
 	}
@@ -146,11 +145,13 @@ func Test_intializeWorkers(t *testing.T) {
 			clientConn := make([]net.Conn, test.count)
 			serverConn := make([]net.Conn, test.count)
 
+			// intialize connections
 			for i := range test.count {
 				clientConn[i], serverConn[i] = net.Pipe()
 				defer clientConn[i].Close()
 			}
 
+			// send and write request to connection
 			wg := sync.WaitGroup{}
 			for i := range test.count {
 				wg.Add(1)

@@ -97,7 +97,10 @@ func Test_repo_GetAllQuestionByTopic(t *testing.T) {
 		func() {
 			db, mock, err := sqlmock.New()
 			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+				t.Fatalf(
+					"an error '%s' was not expected when opening a stub database connection",
+					err,
+				)
 			}
 			defer db.Close()
 
@@ -108,16 +111,14 @@ func Test_repo_GetAllQuestionByTopic(t *testing.T) {
 			}
 
 			_, err = repo.GetAllQuestionByTopic("topic")
-			if test.wantErr {
-				if err == nil {
-					t.Errorf("test: %s\n wanted error, got no error\n\n", test.name)
-				} else if !strings.HasPrefix(err.Error(), test.errorPrefix) {
-					t.Errorf("test: %s\n wanted error of format:\t %s\n got err:\t\t %s\n\n", test.name, test.errorPrefix, err.Error())
-				}
-			} else {
+			if !test.wantErr {
 				if err != nil {
 					t.Errorf("test: %s\n wanted no errors, got: %s\n\n", test.name, err.Error())
 				}
+			} else if err == nil {
+				t.Errorf("test: %s\n wanted error, got no error\n\n", test.name)
+			} else if !strings.HasPrefix(err.Error(), test.errorPrefix) {
+				t.Errorf("test: %s\n wanted error of format:\t %s\n got err:\t\t %s\n\n", test.name, test.errorPrefix, err.Error())
 			}
 		}()
 	}
@@ -145,7 +146,9 @@ func Test_repo_GetQuestionsByIds(t *testing.T) {
 					AddRow("1", "a").
 					AddRow("1", "a")
 
-				mock.ExpectQuery("SELECT id, answer FROM questions WHERE id IN ").WithArgs(driverValueArgs...).WillReturnRows(rows)
+				mock.ExpectQuery("SELECT id, answer FROM questions WHERE id IN ").
+					WithArgs(driverValueArgs...).
+					WillReturnRows(rows)
 			},
 			args:    []string{"id1", "id2", "id3"},
 			wantErr: false,
@@ -157,7 +160,8 @@ func Test_repo_GetQuestionsByIds(t *testing.T) {
 				for _, v := range args {
 					driverValueArgs = append(driverValueArgs, driver.Value(v))
 				}
-				mock.ExpectQuery("SELECT id, answer FROM questions WHERE id IN ").WithArgs(driverValueArgs...)
+				mock.ExpectQuery("SELECT id, answer FROM questions WHERE id IN ").
+					WithArgs(driverValueArgs...)
 			},
 			args:        []string{},
 			wantErr:     true,
@@ -170,7 +174,9 @@ func Test_repo_GetQuestionsByIds(t *testing.T) {
 				for _, v := range args {
 					driverValueArgs = append(driverValueArgs, driver.Value(v))
 				}
-				mock.ExpectQuery("SELECT id, answer FROM questions WHERE id IN ").WithArgs(driverValueArgs...).WillReturnError(errors.New("query failed for mocking"))
+				mock.ExpectQuery("SELECT id, answer FROM questions WHERE id IN ").
+					WithArgs(driverValueArgs...).
+					WillReturnError(errors.New("query failed for mocking"))
 			},
 			args:        []string{"id1", "id2", "id3"},
 			wantErr:     true,
@@ -186,7 +192,9 @@ func Test_repo_GetQuestionsByIds(t *testing.T) {
 				rows := sqlmock.NewRows([]string{"id", "answer"}).
 					AddRow(nil, nil)
 
-				mock.ExpectQuery("SELECT id, answer FROM questions WHERE id IN ").WithArgs(driverValueArgs...).WillReturnRows(rows)
+				mock.ExpectQuery("SELECT id, answer FROM questions WHERE id IN ").
+					WithArgs(driverValueArgs...).
+					WillReturnRows(rows)
 			},
 			args:        []string{"id1", "id2", "id3"},
 			wantErr:     true,
@@ -198,7 +206,10 @@ func Test_repo_GetQuestionsByIds(t *testing.T) {
 		func() {
 			db, mock, err := sqlmock.New()
 			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+				t.Fatalf(
+					"an error '%s' was not expected when opening a stub database connection",
+					err,
+				)
 			}
 			defer db.Close()
 
@@ -209,16 +220,14 @@ func Test_repo_GetQuestionsByIds(t *testing.T) {
 			}
 
 			_, err = repo.GetQuestionsByIds(test.args)
-			if test.wantErr {
-				if err == nil {
-					t.Errorf("test: %s\n wanted error, got no error\n\n", test.name)
-				} else if !strings.HasPrefix(err.Error(), test.errorPrefix) {
-					t.Errorf("test: %s\n wanted error of format:\t %s\n got err:\t\t %s\n\n", test.name, test.errorPrefix, err.Error())
-				}
-			} else {
+			if !test.wantErr {
 				if err != nil {
 					t.Errorf("test: %s\n wanted no errors, got: %s\n\n", test.name, err.Error())
 				}
+			} else if err == nil {
+				t.Errorf("test: %s\n wanted error, got no error\n\n", test.name)
+			} else if !strings.HasPrefix(err.Error(), test.errorPrefix) {
+				t.Errorf("test: %s\n wanted error of format:\t %s\n got err:\t\t %s\n\n", test.name, test.errorPrefix, err.Error())
 			}
 		}()
 	}
@@ -236,7 +245,9 @@ func Test_repo_CreateQuiz(t *testing.T) {
 		{
 			name: "successful case",
 			prepareMock: func(mock sqlmock.Sqlmock, _ error) {
-				mock.ExpectExec("INSERT INTO quizzes").WithArgs("ssid", "ques_id").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("INSERT INTO quizzes").
+					WithArgs("ssid", "ques_id").
+					WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			wantErr: false,
 			err:     "",
@@ -244,7 +255,9 @@ func Test_repo_CreateQuiz(t *testing.T) {
 		{
 			name: "unable to exec query",
 			prepareMock: func(mock sqlmock.Sqlmock, err error) {
-				mock.ExpectExec("INSERT INTO quizzes").WithArgs("ssid", "ques_id").WillReturnError(err)
+				mock.ExpectExec("INSERT INTO quizzes").
+					WithArgs("ssid", "ques_id").
+					WillReturnError(err)
 			},
 			wantErr: true,
 			err:     "mock error",
@@ -255,7 +268,10 @@ func Test_repo_CreateQuiz(t *testing.T) {
 		func() {
 			db, mock, err := sqlmock.New()
 			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+				t.Fatalf(
+					"an error '%s' was not expected when opening a stub database connection",
+					err,
+				)
 			}
 			defer db.Close()
 
@@ -270,16 +286,14 @@ func Test_repo_CreateQuiz(t *testing.T) {
 					Id: "ques_id",
 				},
 			})
-			if test.wantErr {
-				if err == nil {
-					t.Errorf("test: %s\n wanted error, got no error\n\n", test.name)
-				} else if !strings.HasPrefix(err.Error(), test.err) {
-					t.Errorf("test: %s\n wanted error of format:\t %s\n got err:\t\t %s\n\n", test.name, test.err, err.Error())
-				}
-			} else {
+			if !test.wantErr {
 				if err != nil {
 					t.Errorf("test: %s\n wanted no errors, got: %s\n\n", test.name, err.Error())
 				}
+			} else if err == nil {
+				t.Errorf("test: %s\n wanted error, got no error\n\n", test.name)
+			} else if !strings.HasPrefix(err.Error(), test.err) {
+				t.Errorf("test: %s\n wanted error of format:\t %s\n got err:\t\t %s\n\n", test.name, test.err, err.Error())
 			}
 		}()
 	}
@@ -295,14 +309,18 @@ func Test_repo_StoreAnswer(t *testing.T) {
 		{
 			name: "successful response",
 			prepareMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectExec("UPDATE quizzes SET answer").WithArgs("answer", false, "ssid", "ques_id").WillReturnResult(sqlmock.NewResult(1, 1))
+				mock.ExpectExec("UPDATE quizzes SET answer").
+					WithArgs("answer", false, "ssid", "ques_id").
+					WillReturnResult(sqlmock.NewResult(1, 1))
 			},
 			wantErr: false,
 		},
 		{
 			name: "unable to exec",
 			prepareMock: func(mock sqlmock.Sqlmock) {
-				mock.ExpectExec("UPDATE quizzes SET answer").WithArgs("answer", false, "ssid", "ques_id").WillReturnError(errors.New("mock error"))
+				mock.ExpectExec("UPDATE quizzes SET answer").
+					WithArgs("answer", false, "ssid", "ques_id").
+					WillReturnError(errors.New("mock error"))
 			},
 			wantErr: true,
 			err:     "failed to store answer: mock error",
@@ -313,7 +331,10 @@ func Test_repo_StoreAnswer(t *testing.T) {
 		func() {
 			db, mock, err := sqlmock.New()
 			if err != nil {
-				t.Fatalf("an error '%s' was not expected when opening a stub database connection", err)
+				t.Fatalf(
+					"an error '%s' was not expected when opening a stub database connection",
+					err,
+				)
 			}
 			defer db.Close()
 
@@ -324,16 +345,14 @@ func Test_repo_StoreAnswer(t *testing.T) {
 			}
 
 			err = repo.StoreAnswers("ssid", "ques_id", "answer", false)
-			if test.wantErr {
-				if err == nil {
-					t.Errorf("test: %s\n wanted error, got no error\n\n", test.name)
-				} else if !strings.HasPrefix(err.Error(), test.err) {
-					t.Errorf("test: %s\n wanted error of format:\t %s\n got err:\t\t %s\n\n", test.name, test.err, err.Error())
-				}
-			} else {
+			if !test.wantErr {
 				if err != nil {
 					t.Errorf("test: %s\n wanted no errors, got: %s\n\n", test.name, err.Error())
 				}
+			} else if err == nil {
+				t.Errorf("test: %s\n wanted error, got no error\n\n", test.name)
+			} else if !strings.HasPrefix(err.Error(), test.err) {
+				t.Errorf("test: %s\n wanted error of format:\t %s\n got err:\t\t %s\n\n", test.name, test.err, err.Error())
 			}
 		}()
 	}
